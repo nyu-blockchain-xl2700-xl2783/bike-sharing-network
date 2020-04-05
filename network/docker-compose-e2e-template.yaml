@@ -17,13 +17,13 @@
 version: '2'
 
 volumes:
-  orderer.network.com:
-  peer0.providerorg.network.com:
-  peer0.userorg.network.com:
-  peer0.repairerorg.network.com:
+  orderer.bikeshare.com:
+  peer0.providerorg.bikeshare.com:
+  peer0.userorg.bikeshare.com:
+  peer0.repairerorg.bikeshare.com:
 
 networks:
-  network:
+  bsn:
 services:
   provider-ca:
     image: hyperledger/fabric-ca:$IMAGE_TAG
@@ -31,16 +31,16 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-providerorg
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.providerorg.network.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.providerorg.bikeshare.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/EXPORTER_CA_PRIVATE_KEY
     ports:
       - "7054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.providerorg.network.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/EXPORTER_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.providerorg.bikeshare.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/EXPORTER_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
-      - ./crypto-config/peerOrganizations/providerorg.network.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./crypto-config/peerOrganizations/providerorg.bikeshare.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerProviderOrg
     networks:
-      - network
+      - bsn
 
   user-ca:
     image: hyperledger/fabric-ca:$IMAGE_TAG
@@ -48,16 +48,16 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-userorg
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.userorg.network.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.userorg.bikeshare.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/IMPORTER_CA_PRIVATE_KEY
     ports:
       - "8054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.userorg.network.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/IMPORTER_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.userorg.bikeshare.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/IMPORTER_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
-      - ./crypto-config/peerOrganizations/userorg.network.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./crypto-config/peerOrganizations/userorg.bikeshare.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerUserOrg
     networks:
-      - network
+      - bsn
 
   repairer-ca:
     image: hyperledger/fabric-ca:$IMAGE_TAG
@@ -65,45 +65,45 @@ services:
       - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
       - FABRIC_CA_SERVER_CA_NAME=ca-repairerorg
       - FABRIC_CA_SERVER_TLS_ENABLED=true
-      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.repairerorg.network.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.repairerorg.bikeshare.com-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/CARRIER_CA_PRIVATE_KEY
     ports:
       - "9054:7054"
-    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.repairerorg.network.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/CARRIER_CA_PRIVATE_KEY -b admin:adminpw -d'
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.repairerorg.bikeshare.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/CARRIER_CA_PRIVATE_KEY -b admin:adminpw -d'
     volumes:
-      - ./crypto-config/peerOrganizations/repairerorg.network.com/ca/:/etc/hyperledger/fabric-ca-server-config
+      - ./crypto-config/peerOrganizations/repairerorg.bikeshare.com/ca/:/etc/hyperledger/fabric-ca-server-config
     container_name: ca_peerRepairerOrg
     networks:
-      - network
+      - bsn
 
-  orderer.network.com:
+  orderer.bikeshare.com:
     extends:
       file:   base/docker-compose-base.yaml
-      service: orderer.network.com
-    container_name: orderer.network.com
+      service: orderer.bikeshare.com
+    container_name: orderer.bikeshare.com
     networks:
-      - network
+      - bsn
 
-  peer0.providerorg.network.com:
-    container_name: peer0.providerorg.network.com
+  peer0.providerorg.bikeshare.com:
+    container_name: peer0.providerorg.bikeshare.com
     extends:
       file:  base/docker-compose-base.yaml
-      service: peer0.providerorg.network.com
+      service: peer0.providerorg.bikeshare.com
     networks:
-      - network
+      - bsn
 
-  peer0.userorg.network.com:
-    container_name: peer0.userorg.network.com
+  peer0.userorg.bikeshare.com:
+    container_name: peer0.userorg.bikeshare.com
     extends:
       file:  base/docker-compose-base.yaml
-      service: peer0.userorg.network.com
+      service: peer0.userorg.bikeshare.com
     networks:
-      - network
+      - bsn
 
-  peer0.repairerorg.network.com:
-    container_name: peer0.repairerorg.network.com
+  peer0.repairerorg.bikeshare.com:
+    container_name: peer0.repairerorg.bikeshare.com
     extends:
       file:  base/docker-compose-base.yaml
-      service: peer0.repairerorg.network.com
+      service: peer0.repairerorg.bikeshare.com
     networks:
-      - network
+      - bsn

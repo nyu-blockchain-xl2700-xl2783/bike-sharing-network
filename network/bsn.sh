@@ -48,8 +48,8 @@ DEV_MODE=false
 # Print the usage message
 function printHelp () {
   echo "Usage: "
-  echo "  network.sh up|down|restart|generate|reset|clean|upgrade [-c <channel name>] [-f <docker-compose-file>] [-i <imagetag>] [-o <logfile>] [-dev]"
-  echo "  network.sh -h|--help (print this message)"
+  echo "  bsn.sh up|down|restart|generate|reset|clean|upgrade [-c <channel name>] [-f <docker-compose-file>] [-i <imagetag>] [-o <logfile>] [-dev]"
+  echo "  bsn.sh -h|--help (print this message)"
   echo "    <mode> - one of 'up', 'down', 'restart' or 'generate'"
   echo "      - 'up' - bring up the network with docker-compose up"
   echo "      - 'down' - clear the network with docker-compose down"
@@ -58,7 +58,7 @@ function printHelp () {
   echo "      - 'reset' - delete chaincode containers while keeping network artifacts" 
   echo "      - 'clean' - delete network artifacts" 
   echo "      - 'upgrade'  - upgrade the network from v1.0.x to v1.1"
-  echo "    -c <channel name> - channel name to use (defaults to \"networkchannel\")"
+  echo "    -c <channel name> - channel name to use (defaults to \"bsnchannel\")"
   echo "    -f <docker-compose-file> - specify which docker-compose file use (defaults to docker-compose-e2e.yaml)"
   echo "    -i <imagetag> - the tag to be used to launch the network (defaults to \"latest\")"
   echo "    -d - Apply command to the network in dev mode."
@@ -66,16 +66,16 @@ function printHelp () {
   echo "Typically, one would first generate the required certificates and "
   echo "genesis block, then bring up the network. e.g.:"
   echo
-  echo "	network.sh generate -c networkchannel"
-  echo "	network.sh up -c networkchannel -o logs/network.log"
-  echo "        network.sh up -c networkchannel -i 1.1.0-alpha"
-  echo "	network.sh down -c networkchannel"
-  echo "        network.sh upgrade -c networkchannel"
+  echo "	bsn.sh generate -c bsnchannel"
+  echo "	bsn.sh up -c bsnchannel -o logs/bsn.log"
+  echo "        bsn.sh up -c bsnchannel -i 1.1.0-alpha"
+  echo "	bsn.sh down -c bsnchannel"
+  echo "        bsn.sh upgrade -c bsnchannel"
   echo
   echo "Taking all defaults:"
-  echo "	network.sh generate"
-  echo "	network.sh up"
-  echo "	network.sh down"
+  echo "	bsn.sh generate"
+  echo "	bsn.sh up"
+  echo "	bsn.sh down"
 }
 
 # Keeps pushd silent
@@ -188,7 +188,7 @@ function networkUp () {
 # Stop the orderer and peers, backup the ledger from orderer and peers, cleanup chaincode containers and images
 # and relaunch the orderer and peers with latest tag
 function upgradeNetwork () {
-  docker inspect  -f '{{.Config.Volumes}}' orderer.network.com |grep -q '/var/hyperledger/production/orderer'
+  docker inspect  -f '{{.Config.Volumes}}' orderer.bikeshare.com |grep -q '/var/hyperledger/production/orderer'
   if [ $? -ne 0 ]; then
     echo "ERROR !!!! This network does not appear to be using volumes for its ledgers, did you start from fabric-samples >= v1.0.6?"
     exit 1
@@ -203,11 +203,11 @@ function upgradeNetwork () {
   COMPOSE_FILES="-f $COMPOSE_FILE"
 
   echo "Upgrading orderer"
-  docker-compose $COMPOSE_FILES stop orderer.network.com
-  docker cp -a orderer.network.com:/var/hyperledger/production/orderer $LEDGERS_BACKUP/orderer.network.com
-  docker-compose $COMPOSE_FILES up --no-deps orderer.network.com
+  docker-compose $COMPOSE_FILES stop orderer.bikeshare.com
+  docker cp -a orderer.bikeshare.com:/var/hyperledger/production/orderer $LEDGERS_BACKUP/orderer.bikeshare.com
+  docker-compose $COMPOSE_FILES up --no-deps orderer.bikeshare.com
 
-  for PEER in peer0.providerorg.network.com peer0.userorg.network.com peer0.repairerorg.network.com; do
+  for PEER in peer0.providerorg.bikeshare.com peer0.userorg.bikeshare.com peer0.repairerorg.bikeshare.com; do
     echo "Upgrading peer $PEER"
 
     # Stop the peer and backup its ledger
@@ -238,7 +238,7 @@ function networkDown () {
 
   docker-compose -f $COMPOSE_FILE down --volumes
 
-  for PEER in peer0.providerorg.network.com peer0.userorg.network.com peer0.repairerorg.network.com; do
+  for PEER in peer0.providerorg.bikeshare.com peer0.userorg.bikeshare.com peer0.repairerorg.bikeshare.com; do
     # Remove any old containers and images for this peer
     CC_CONTAINERS=$(docker ps -a | grep dev-$PEER | awk '{print $1}')
     if [ -n "$CC_CONTAINERS" ] ; then
@@ -281,7 +281,7 @@ function replacePrivateKey () {
   
   if [ "$DEV_MODE" = true ] ; then
     CURRENT_DIR=$PWD
-    cd crypto-config/peerOrganizations/devorg.network.com/ca/
+    cd crypto-config/peerOrganizations/devorg.bikeshare.com/ca/
     PRIV_KEY=$(ls *_sk)
     cd "$CURRENT_DIR"
     if [ $(uname -s) == 'Darwin' ] ; then
@@ -295,29 +295,29 @@ function replacePrivateKey () {
     # actual values of the private key file names for the two CAs.
     if [ $(uname -s) == 'Darwin' ] ; then
       CURRENT_DIR=$PWD
-      cd crypto-config/peerOrganizations/providerorg.network.com/ca/
+      cd crypto-config/peerOrganizations/providerorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i '' "s/EXPORTER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
-      cd crypto-config/peerOrganizations/userorg.network.com/ca/
+      cd crypto-config/peerOrganizations/userorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i '' "s/IMPORTER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
-      cd crypto-config/peerOrganizations/repairerorg.network.com/ca/
+      cd crypto-config/peerOrganizations/repairerorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i '' "s/CARRIER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
     else
       CURRENT_DIR=$PWD
-      cd crypto-config/peerOrganizations/providerorg.network.com/ca/
+      cd crypto-config/peerOrganizations/providerorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i "s/EXPORTER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
-      cd crypto-config/peerOrganizations/userorg.network.com/ca/
+      cd crypto-config/peerOrganizations/userorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i "s/IMPORTER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
-      cd crypto-config/peerOrganizations/repairerorg.network.com/ca/
+      cd crypto-config/peerOrganizations/repairerorg.bikeshare.com/ca/
       PRIV_KEY=$(ls *_sk)
       cd "$CURRENT_DIR"
       sed -i "s/CARRIER_CA_PRIVATE_KEY/${PRIV_KEY}/g" docker-compose-e2e.yaml
@@ -385,17 +385,17 @@ function generateCerts (){
 # Org's anchor peer on this channel.
 #
 # Configtxgen consumes a file - ``configtx.yaml`` - that contains the definitions
-# for the sample network. There are five members - one Orderer Org (``NetworkOrdererOrg``)
+# for the sample network. There are four members - one Orderer Org (``NetworkOrdererOrg``)
 # and three Peer Orgs (``ProviderOrg``, ``UserOrg`` & ``RepairerOrg``)
 # each managing and maintaining one peer node.
-# This file also specifies a consortium - ``NetworkConsortium`` - consisting of our
+# This file also specifies a consortium - ``BikeShareConsortium`` - consisting of our
 # four Peer Orgs.  Pay specific attention to the "Profiles" section at the top of
 # this file.  You will notice that we have two unique headers. One for the orderer genesis
-# block - ``ThreeOrgsNetworkOrdererGenesis`` - and one for our channel - ``ThreeOrgsNetworkChannel``.
+# block - ``ThreeOrgsBikeShareOrdererGenesis`` - and one for our channel - ``ThreeOrgsBikeShareChannel``.
 # These headers are important, as we will pass them in as arguments when we create
 # our artifacts.  This file also contains two additional specifications that are worth
 # noting.  Firstly, we specify the anchor peers for each Peer Org
-# (``peer0.providerorg.network.com`` & ``peer0.userorg.network.com``).  Secondly, we point to
+# (``peer0.providerorg.bikeshare.com`` & ``peer0.userorg.bikeshare.com``).  Secondly, we point to
 # the location of the MSP directory for each member, in turn allowing us to store the
 # root certificates for each Org in the orderer genesis block.  This is a critical
 # concept. Now any network entity communicating with the ordering service can have
@@ -427,11 +427,11 @@ function generateChannelArtifacts() {
   echo "#########  Generating Orderer Genesis block  ##############"
   echo "###########################################################"
   if [ "$DEV_MODE" = true ] ; then
-    PROFILE=OneOrgNetworkOrdererGenesis
-    CHANNEL_PROFILE=OneOrgNetworkChannel
+    PROFILE=OneOrgBikeShareOrdererGenesis
+    CHANNEL_PROFILE=OneOrgBikeShareChannel
   else 
-    PROFILE=ThreeOrgsNetworkOrdererGenesis
-    CHANNEL_PROFILE=ThreeOrgsNetworkChannel
+    PROFILE=ThreeOrgsBikeShareOrdererGenesis
+    CHANNEL_PROFILE=ThreeOrgsBikeShareChannel
   fi
 
   # Note: For some unknown reason (at least for now) the block file can't be
@@ -503,13 +503,13 @@ function generateChannelArtifacts() {
 }
 
 # channel name (overrides default 'testchainid')
-CHANNEL_NAME="networkchannel"
+CHANNEL_NAME="bsnchannel"
 # use this as the default docker-compose yaml definition
 COMPOSE_FILE=docker-compose-e2e.yaml
 # default image tag
 IMAGETAG="latest"
 # default log file
-LOG_FILE="logs/network.log"
+LOG_FILE="logs/bsn.log"
 # Parse commandline args
 
 MODE=$1;shift

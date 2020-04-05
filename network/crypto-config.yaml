@@ -19,10 +19,10 @@
 # ---------------------------------------------------------------------------
 OrdererOrgs:
   # ---------------------------------------------------------------------------
-  # NetworkOrderer
+  # Orderer
   # ---------------------------------------------------------------------------
-  - Name: NetworkOrderer
-    Domain: network.com
+  - Name: Orderer
+    Domain: bikeshare.com
     # ---------------------------------------------------------------------------
     # "Specs" - See PeerOrgs below for complete description
     # ---------------------------------------------------------------------------
@@ -36,7 +36,7 @@ PeerOrgs:
   # ProviderOrg
   # ---------------------------------------------------------------------------
   - Name: ProviderOrg
-    Domain: providerorg.network.com
+    Domain: providerorg.bikeshare.com
     EnableNodeOUs: true
     # ---------------------------------------------------------------------------
     # "Specs"
@@ -86,7 +86,7 @@ PeerOrgs:
   # UserOrg
   # ---------------------------------------------------------------------------
   - Name: UserOrg
-    Domain: userorg.network.com
+    Domain: userorg.bikeshare.com
     EnableNodeOUs: true
     Template:
       Count: 1
@@ -96,7 +96,7 @@ PeerOrgs:
   # RepairerOrg
   # ---------------------------------------------------------------------------
   - Name: RepairerOrg
-    Domain: repairerorg.network.com
+    Domain: repairerorg.bikeshare.com
     EnableNodeOUs: true
     Template:
       Count: 1

@@ -26,28 +26,28 @@ Organizations:
 
     # SampleOrg defines an MSP using the sampleconfig.  It should never be used
     # in production but may be used as a template for other definitions
-    - &NetworkOrdererOrg
+    - &OrdererOrg
         # DefaultOrg defines the organization which is used in the sampleconfig
         # of the fabric.git development environment
-        Name: NetworkOrdererOrg
+        Name: OrdererOrg
 
         # ID to load the MSP definition as
-        ID: NetworkOrdererMSP
+        ID: OrdererMSP
 
         # MSPDir is the filesystem path which contains the MSP configuration
-        MSPDir: crypto-config/ordererOrganizations/network.com/msp
+        MSPDir: crypto-config/ordererOrganizations/bikeshare.com/msp
 
         # Policies for reading, writing, configuration
         Policies:
             Readers:
                 Type: Signature
-                Rule: "OR('NetworkOrdererMSP.member')"
+                Rule: "OR('OrdererMSP.member')"
             Writers:
                 Type: Signature
-                Rule: "OR('NetworkOrdererMSP.member')"
+                Rule: "OR('OrdererMSP.member')"
             Admins:
                 Type: Signature
-                Rule: "OR('NetworkOrdererMSP.admin')"
+                Rule: "OR('OrdererMSP.admin')"
 
     - &ProviderOrg
         # DefaultOrg defines the organization which is used in the sampleconfig
@@ -57,7 +57,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: ProviderOrgMSP
 
-        MSPDir: crypto-config/peerOrganizations/providerorg.network.com/msp
+        MSPDir: crypto-config/peerOrganizations/providerorg.bikeshare.com/msp
 
         # Policies for reading, writing, configuration
         Policies:
@@ -75,7 +75,7 @@ Organizations:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: peer0.providerorg.network.com
+            - Host: peer0.providerorg.bikeshare.com
               Port: 7051
 
     - &UserOrg
@@ -86,7 +86,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: UserOrgMSP
 
-        MSPDir: crypto-config/peerOrganizations/userorg.network.com/msp
+        MSPDir: crypto-config/peerOrganizations/userorg.bikeshare.com/msp
 
         # Policies for reading, writing, configuration
         Policies:
@@ -104,7 +104,7 @@ Organizations:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: peer0.userorg.network.com
+            - Host: peer0.userorg.bikeshare.com
               Port: 7051
 
     - &RepairerOrg
@@ -115,7 +115,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: RepairerOrgMSP
 
-        MSPDir: crypto-config/peerOrganizations/repairerorg.network.com/msp
+        MSPDir: crypto-config/peerOrganizations/repairerorg.bikeshare.com/msp
 
         # Policies for reading, writing, configuration
         Policies:
@@ -133,7 +133,7 @@ Organizations:
             # AnchorPeers defines the location of peers which can be used
             # for cross org gossip communication.  Note, this value is only
             # encoded in the genesis block in the Application section context
-            - Host: peer0.repairerorg.network.com
+            - Host: peer0.repairerorg.bikeshare.com
               Port: 7051
 
 Orderer: &OrdererDefaults
@@ -143,7 +143,7 @@ Orderer: &OrdererDefaults
     OrdererType: solo
 
     Addresses:
-        - orderer.network.com:7050
+        - orderer.bikeshare.com:7050
 
     # Batch Timeout: The amount of time to wait before creating a batch
     BatchTimeout: 2s
@@ -308,24 +308,24 @@ Capabilities:
 ################################################################################
 Profiles:
 
-    ThreeOrgsNetworkOrdererGenesis:
+    ThreeOrgsBikeShareOrdererGenesis:
         <<: *ChannelDefaults
         Capabilities:
             <<: *ChannelCapabilities
         Orderer:
             <<: *OrdererDefaults
             Organizations:
-                - *NetworkOrdererOrg
+                - *OrdererOrg
             Capabilities:
                 <<: *OrdererCapabilities
         Consortiums:
-            NetworkConsortium:
+            BikeShareConsortium:
                 Organizations:
                     - *ProviderOrg
                     - *UserOrg
                     - *RepairerOrg
-    ThreeOrgsNetworkChannel:
-        Consortium: NetworkConsortium
+    ThreeOrgsBikeShareChannel:
+        Consortium: BikeShareConsortium
         Application:
             <<: *ApplicationDefaults
             Organizations:

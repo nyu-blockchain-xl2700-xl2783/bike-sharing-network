@@ -24,6 +24,7 @@ volumes:
 
 networks:
   bsn:
+
 services:
   provider-ca:
     image: hyperledger/fabric-ca:$IMAGE_TAG
@@ -78,32 +79,62 @@ services:
 
   orderer.bikeshare.com:
     extends:
-      file:   base/docker-compose-base.yaml
+      file: base/docker-compose-base.yaml
       service: orderer.bikeshare.com
     container_name: orderer.bikeshare.com
+    networks:
+      - bsn
+
+  couchdb0.providerorg.bikeshare.com:
+    container_name: couchdb0.providerorg.bikeshare.com
+    extends:
+      file: base/docker-compose-base.yaml
+      service: couchdb0.providerorg.bikeshare.com
     networks:
       - bsn
 
   peer0.providerorg.bikeshare.com:
     container_name: peer0.providerorg.bikeshare.com
     extends:
-      file:  base/docker-compose-base.yaml
+      file: base/docker-compose-base.yaml
       service: peer0.providerorg.bikeshare.com
+    networks:
+      - bsn
+    depends_on:
+      - couchdb0.providerorg.bikeshare.com
+
+  couchdb0.userorg.bikeshare.com:
+    container_name: couchdb0.userorg.bikeshare.com
+    extends:
+      file: base/docker-compose-base.yaml
+      service: couchdb0.userorg.bikeshare.com
     networks:
       - bsn
 
   peer0.userorg.bikeshare.com:
     container_name: peer0.userorg.bikeshare.com
     extends:
-      file:  base/docker-compose-base.yaml
+      file: base/docker-compose-base.yaml
       service: peer0.userorg.bikeshare.com
+    networks:
+      - bsn
+    depends_on:
+      - couchdb0.userorg.bikeshare.com
+
+  couchdb0.repairerorg.bikeshare.com:
+    container_name: couchdb0.repairerorg.bikeshare.com
+    extends:
+      file: base/docker-compose-base.yaml
+      service: couchdb0.repairerorg.bikeshare.com
     networks:
       - bsn
 
   peer0.repairerorg.bikeshare.com:
     container_name: peer0.repairerorg.bikeshare.com
     extends:
-      file:  base/docker-compose-base.yaml
+      file: base/docker-compose-base.yaml
       service: peer0.repairerorg.bikeshare.com
     networks:
       - bsn
+    depends_on:
+      - couchdb0.repairerorg.bikeshare.com

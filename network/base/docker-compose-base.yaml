@@ -17,7 +17,6 @@
 version: '2'
 
 services:
-
   orderer.bikeshare.com:
     container_name: orderer.bikeshare.com
     image: hyperledger/fabric-orderer:$IMAGE_TAG
@@ -36,12 +35,25 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-    - ../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-    - ../crypto-config/ordererOrganizations/bikeshare.com/orderers/orderer.bikeshare.com/msp:/var/hyperledger/orderer/msp
-    - ../crypto-config/ordererOrganizations/bikeshare.com/orderers/orderer.bikeshare.com/tls/:/var/hyperledger/orderer/tls
-    - orderer.bikeshare.com:/var/hyperledger/production/orderer
+      - ../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+      - ../crypto-config/ordererOrganizations/bikeshare.com/orderers/orderer.bikeshare.com/msp:/var/hyperledger/orderer/msp
+      - ../crypto-config/ordererOrganizations/bikeshare.com/orderers/orderer.bikeshare.com/tls/:/var/hyperledger/orderer/tls
+      - orderer.bikeshare.com:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
+
+  couchdb0.providerorg.bikeshare.com:
+    container_name: couchdb0.providerorg.bikeshare.com
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=provider
+      - COUCHDB_PASSWORD=couchdb
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "5984:5984"
 
   peer0.providerorg.bikeshare.com:
     container_name: peer0.providerorg.bikeshare.com
@@ -54,15 +66,35 @@ services:
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.providerorg.bikeshare.com:7051
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.providerorg.bikeshare.com:7051
       - CORE_PEER_LOCALMSPID=ProviderOrgMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0.providerorg.bikeshare.com:5984
+      # The CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME and CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+      # provide the credentials for ledger to connect to CouchDB.  The username and password must
+      # match the username and password set for the associated CouchDB.
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=provider
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=couchdb
     volumes:
-        - /var/run/:/host/var/run/
-        - ../crypto-config/peerOrganizations/providerorg.bikeshare.com/peers/peer0.providerorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
-        - ../crypto-config/peerOrganizations/providerorg.bikeshare.com/peers/peer0.providerorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
-        - peer0.providerorg.bikeshare.com:/var/hyperledger/production
+      - /var/run/:/host/var/run/
+      - ../crypto-config/peerOrganizations/providerorg.bikeshare.com/peers/peer0.providerorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/providerorg.bikeshare.com/peers/peer0.providerorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.providerorg.bikeshare.com:/var/hyperledger/production
     ports:
       - 7051:7051
       - 7053:7053
       - 7055:6060
+
+  couchdb0.userorg.bikeshare.com:
+    container_name: couchdb0.userorg.bikeshare.com
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=user
+      - COUCHDB_PASSWORD=couchdb
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "6984:5984"
 
   peer0.userorg.bikeshare.com:
     container_name: peer0.userorg.bikeshare.com
@@ -75,15 +107,35 @@ services:
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.userorg.bikeshare.com:7051
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.userorg.bikeshare.com:7051
       - CORE_PEER_LOCALMSPID=UserOrgMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0.userorg.bikeshare.com:5984
+      # The CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME and CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+      # provide the credentials for ledger to connect to CouchDB.  The username and password must
+      # match the username and password set for the associated CouchDB.
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=user
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=couchdb
     volumes:
-        - /var/run/:/host/var/run/
-        - ../crypto-config/peerOrganizations/userorg.bikeshare.com/peers/peer0.userorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
-        - ../crypto-config/peerOrganizations/userorg.bikeshare.com/peers/peer0.userorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
-        - peer0.userorg.bikeshare.com:/var/hyperledger/production
+      - /var/run/:/host/var/run/
+      - ../crypto-config/peerOrganizations/userorg.bikeshare.com/peers/peer0.userorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/userorg.bikeshare.com/peers/peer0.userorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.userorg.bikeshare.com:/var/hyperledger/production
     ports:
       - 8051:7051
       - 8053:7053
       - 8055:6060
+
+  couchdb0.repairerorg.bikeshare.com:
+    container_name: couchdb0.repairerorg.bikeshare.com
+    image: hyperledger/fabric-couchdb
+    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
+    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
+    environment:
+      - COUCHDB_USER=repairer
+      - COUCHDB_PASSWORD=couchdb
+    # Comment/Uncomment the port mapping if you want to hide/expose the CouchDB service,
+    # for example map it to utilize Fauxton User Interface in dev environments.
+    ports:
+      - "7984:5984"
 
   peer0.repairerorg.bikeshare.com:
     container_name: peer0.repairerorg.bikeshare.com
@@ -96,11 +148,18 @@ services:
       - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.repairerorg.bikeshare.com:7051
       - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.repairerorg.bikeshare.com:7051
       - CORE_PEER_LOCALMSPID=RepairerOrgMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb0.repairerorg.bikeshare.com:5984
+      # The CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME and CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+      # provide the credentials for ledger to connect to CouchDB.  The username and password must
+      # match the username and password set for the associated CouchDB.
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=repairer
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=couchdb
     volumes:
-        - /var/run/:/host/var/run/
-        - ../crypto-config/peerOrganizations/repairerorg.bikeshare.com/peers/peer0.repairerorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
-        - ../crypto-config/peerOrganizations/repairerorg.bikeshare.com/peers/peer0.repairerorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
-        - peer0.repairerorg.bikeshare.com:/var/hyperledger/production
+      - /var/run/:/host/var/run/
+      - ../crypto-config/peerOrganizations/repairerorg.bikeshare.com/peers/peer0.repairerorg.bikeshare.com/msp:/etc/hyperledger/fabric/msp
+      - ../crypto-config/peerOrganizations/repairerorg.bikeshare.com/peers/peer0.repairerorg.bikeshare.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.repairerorg.bikeshare.com:/var/hyperledger/production
     ports:
       - 9051:7051
       - 9053:7053

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,6 +47,9 @@ func (t *BikeShareWorkflowChaincode) Invoke(stub shim.ChaincodeStubInterface) pb
 	} else if function == "updateBikeLocation" {
 		// Provider updates the location of a bike
 		return t.updateBikeLocation(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getBikesByStatus" {
+		// Get all bikes with specified status
+		return t.getBikesByStatus(stub, creatorOrg, creatorCertIssuer, args)
 	}
 
 	return shim.Error("Invalid invoke function name.")
@@ -229,6 +233,77 @@ func (t *BikeShareWorkflowChaincode) updateBikeLocation(stub shim.ChaincodeStubI
 	fmt.Printf("The location of bike %s updated.\n", args[0])
 
 	return shim.Success(nil)
+}
+
+// Construct JSON array from a given query results iterator
+func constructQueryResponseFromIterator(iterator shim.StateQueryIteratorInterface) (*bytes.Buffer, error) {
+	var queryResponseArray bytes.Buffer
+
+	queryResponseArray.WriteString("[")
+	isArrayMemberAlreadyWritten := false
+	for iterator.HasNext() {
+		queryResponse, err := iterator.Next()
+		if err != nil {
+			return nil, err
+		}
+		// Add a comma before array members, suppress it for the first array member
+		if isArrayMemberAlreadyWritten == true {
+			queryResponseArray.WriteString(",")
+		}
+		queryResponseArray.WriteString("{\"Key\":")
+		queryResponseArray.WriteString("\"")
+		queryResponseArray.WriteString(queryResponse.Key)
+		queryResponseArray.WriteString("\"")
+		queryResponseArray.WriteString(", \"Record\":")
+		// Record is a JSON object, so we write as-is
+		queryResponseArray.WriteString(string(queryResponse.Value))
+		queryResponseArray.WriteString("}")
+		isArrayMemberAlreadyWritten = true
+	}
+	queryResponseArray.WriteString("]")
+
+	return &queryResponseArray, nil
+}
+
+func getQueryResponse(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
+	fmt.Printf("Query String:\n%s\n", queryString)
+
+	iterator, err := stub.GetQueryResult(queryString)
+	if err != nil {
+		return nil, err
+	}
+	defer iterator.Close()
+
+	queryResponse, err := constructQueryResponseFromIterator(iterator)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("Query Result:\n%s\n", queryResponse.String())
+
+	return queryResponse.Bytes(), nil
+}
+
+func (t *BikeShareWorkflowChaincode) getBikesByStatus(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Status}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"status\":\"%s\"}}", BIKE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
 }
 
 func main() {

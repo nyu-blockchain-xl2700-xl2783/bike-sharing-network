@@ -83,15 +83,66 @@ func (t *BikeShareWorkflowChaincode) Invoke(stub shim.ChaincodeStubInterface) pb
 	} else if function == "completeRepair" {
 		// Repairer completes a repair
 		return t.completeRepair(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getUsers" {
+		// Provider/User gets all users
+		return t.getUsers(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRepairers" {
+		// Provider/Repairer gets all repairers
+		return t.getRepairers(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getBikes" {
+		// Provider/User/Repairer gets all bikes
+		return t.getBikes(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getBikeById" {
+		// Provider/User/Repairer gets bike with specified ID
+		return t.getBikeById(stub, creatorOrg, creatorCertIssuer, args)
 	} else if function == "getBikesByStatus" {
 		// Provider/User/Repairer gets all bikes with specified status
 		return t.getBikesByStatus(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRides" {
+		// Provider/User gets all rides
+		return t.getRides(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRideById" {
+		// Provider/User gets ride with specified ID
+		return t.getRideById(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRidesByUser" {
+		// Provider/User gets all rides with specified user
+		return t.getRidesByUser(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRidesByBike" {
+		// Provider/User gets all rides with specified bike
+		return t.getRidesByBike(stub, creatorOrg, creatorCertIssuer, args)
 	} else if function == "getRidesByStatus" {
 		// Provider/User gets all rides with specified status
 		return t.getRidesByStatus(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getIssues" {
+		// Provider/User gets all issues
+		return t.getIssues(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getIssueById" {
+		// Provider/User gets issue with specified ID
+		return t.getIssueById(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getIssuesByUser" {
+		// Provider/User gets all issues with specified user
+		return t.getIssuesByUser(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getIssuesByBike" {
+		// Provider/User gets all issues with specified bike
+		return t.getIssuesByBike(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getIssueByRide" {
+		// Provider/User gets issue with specified ride
+		return t.getIssueByRide(stub, creatorOrg, creatorCertIssuer, args)
 	} else if function == "getIssuesByStatus" {
 		// Provider/User gets all issues with specified status
 		return t.getIssuesByStatus(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRepairs" {
+		// Provider/Repairer gets all repairs
+		return t.getRepairs(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRepairById" {
+		// Provider/Repairer gets repair with specified ID
+		return t.getRepairById(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRepairsByBike" {
+		// Provider/Repairer gets all repairs with specified bike
+		return t.getRepairsByBike(stub, creatorOrg, creatorCertIssuer, args)
+	} else if function == "getRepairsByRepairer" {
+		// Provider/Repairer gets all repairs with specified repairer
+		return t.getRepairsByRepairer(stub, creatorOrg, creatorCertIssuer, args)
 	} else if function == "getRepairsByStatus" {
 		// Provider/Repairer gets all repairs with specified status
 		return t.getRepairsByStatus(stub, creatorOrg, creatorCertIssuer, args)
@@ -1545,6 +1596,98 @@ func getQueryResponse(stub shim.ChaincodeStubInterface, queryString string) ([]b
 	return queryResponse.Bytes(), nil
 }
 
+// Get all users
+func (t *BikeShareWorkflowChaincode) getUsers(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", USER)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all repairers
+func (t *BikeShareWorkflowChaincode) getRepairers(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", REPAIRER)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all bikes
+func (t *BikeShareWorkflowChaincode) getBikes(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", BIKE)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get bike with specified ID
+func (t *BikeShareWorkflowChaincode) getBikeById(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Bike ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"id\":\"%s\"}}", BIKE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
 // Get all bikes with specified status
 func (t *BikeShareWorkflowChaincode) getBikesByStatus(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
 	var err error
@@ -1560,6 +1703,98 @@ func (t *BikeShareWorkflowChaincode) getBikesByStatus(stub shim.ChaincodeStubInt
 	}
 
 	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"status\":\"%s\"}}", BIKE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all rides
+func (t *BikeShareWorkflowChaincode) getRides(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", RIDE)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get ride with specified ID
+func (t *BikeShareWorkflowChaincode) getRideById(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Ride ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"id\":\"%s\"}}", RIDE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all rides with specified user
+func (t *BikeShareWorkflowChaincode) getRidesByUser(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {User ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"userId\":\"%s\"}}", RIDE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all rides with specified bike
+func (t *BikeShareWorkflowChaincode) getRidesByBike(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Bike ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"bikeId\":\"%s\"}}", RIDE, args[0])
 	queryResponse, err := getQueryResponse(stub, queryString)
 	if err != nil {
 		return shim.Error(err.Error())
@@ -1591,6 +1826,121 @@ func (t *BikeShareWorkflowChaincode) getRidesByStatus(stub shim.ChaincodeStubInt
 	return shim.Success(queryResponse)
 }
 
+// Get all issues
+func (t *BikeShareWorkflowChaincode) getIssues(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", ISSUE)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get issue with specified ID
+func (t *BikeShareWorkflowChaincode) getIssueById(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Issue ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"id\":\"%s\"}}", ISSUE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all issues with specified user
+func (t *BikeShareWorkflowChaincode) getIssuesByUser(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {User ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"userId\":\"%s\"}}", ISSUE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all issues with specified bike
+func (t *BikeShareWorkflowChaincode) getIssuesByBike(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Bike ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"bikeId\":\"%s\"}}", ISSUE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get issue with specified ride
+func (t *BikeShareWorkflowChaincode) getIssueByRide(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/User Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateUserOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/User Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Ride ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"rideId\":\"%s\"}}", ISSUE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
 // Get all issues with specified status
 func (t *BikeShareWorkflowChaincode) getIssuesByStatus(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
 	var err error
@@ -1606,6 +1956,98 @@ func (t *BikeShareWorkflowChaincode) getIssuesByStatus(stub shim.ChaincodeStubIn
 	}
 
 	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"status\":\"%s\"}}", ISSUE, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all repairs
+func (t *BikeShareWorkflowChaincode) getRepairs(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 0 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 0. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\"}}", REPAIR)
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get repair with specified ID
+func (t *BikeShareWorkflowChaincode) getRepairById(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Repair ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"id\":\"%s\"}}", REPAIR, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all repairs with specified bike
+func (t *BikeShareWorkflowChaincode) getRepairsByBike(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Bike ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"bikeId\":\"%s\"}}", REPAIR, args[0])
+	queryResponse, err := getQueryResponse(stub, queryString)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(queryResponse)
+}
+
+// Get all repairs with specified repairer
+func (t *BikeShareWorkflowChaincode) getRepairsByRepairer(stub shim.ChaincodeStubInterface, creatorOrg string, creatorCertIssuer string, args []string) pb.Response {
+	var err error
+
+	// Access control: Only a Provider/Repairer Org member can invoke this transaction
+	if !t.devMode && !(authenticateProviderOrg(creatorOrg, creatorCertIssuer) || authenticateRepairerOrg(creatorOrg, creatorCertIssuer)) {
+		return shim.Error("Caller not a member of Provider/Repairer Org. Access denied.")
+	}
+
+	if len(args) != 1 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 1: {Repairer ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"%s\",\"repairerId\":\"%s\"}}", REPAIR, args[0])
 	queryResponse, err := getQueryResponse(stub, queryString)
 	if err != nil {
 		return shim.Error(err.Error())

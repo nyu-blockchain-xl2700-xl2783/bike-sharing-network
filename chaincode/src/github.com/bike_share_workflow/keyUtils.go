@@ -4,8 +4,26 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
 
+func getUserKey(stub shim.ChaincodeStubInterface, userID string) (string, error) {
+	userKey, err := stub.CreateCompositeKey("User-", []string{userID})
+	if err != nil {
+		return "", err
+	} else {
+		return userKey, nil
+	}
+}
+
+func getRepairerKey(stub shim.ChaincodeStubInterface, repairerID string) (string, error) {
+	repairerKey, err := stub.CreateCompositeKey("Repairer-", []string{repairerID})
+	if err != nil {
+		return "", err
+	} else {
+		return repairerKey, nil
+	}
+}
+
 func getBikeKey(stub shim.ChaincodeStubInterface, bikeID string) (string, error) {
-	bikeKey, err := stub.CreateCompositeKey("Bike", []string{bikeID})
+	bikeKey, err := stub.CreateCompositeKey("Bike-", []string{bikeID})
 	if err != nil {
 		return "", err
 	} else {
@@ -14,7 +32,7 @@ func getBikeKey(stub shim.ChaincodeStubInterface, bikeID string) (string, error)
 }
 
 func getRideKey(stub shim.ChaincodeStubInterface, rideID string) (string, error) {
-	rideKey, err := stub.CreateCompositeKey("Ride", []string{rideID})
+	rideKey, err := stub.CreateCompositeKey("Ride-", []string{rideID})
 	if err != nil {
 		return "", err
 	} else {
@@ -23,7 +41,7 @@ func getRideKey(stub shim.ChaincodeStubInterface, rideID string) (string, error)
 }
 
 func getIssueKey(stub shim.ChaincodeStubInterface, issueID string) (string, error) {
-	issueKey, err := stub.CreateCompositeKey("Issue", []string{issueID})
+	issueKey, err := stub.CreateCompositeKey("Issue-", []string{issueID})
 	if err != nil {
 		return "", err
 	} else {
@@ -32,7 +50,7 @@ func getIssueKey(stub shim.ChaincodeStubInterface, issueID string) (string, erro
 }
 
 func getRepairKey(stub shim.ChaincodeStubInterface, repairID string) (string, error) {
-	repairKey, err := stub.CreateCompositeKey("Repair", []string{repairID})
+	repairKey, err := stub.CreateCompositeKey("Repair-", []string{repairID})
 	if err != nil {
 		return "", err
 	} else {

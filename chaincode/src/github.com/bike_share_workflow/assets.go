@@ -1,5 +1,18 @@
 package main
 
+type User struct {
+	ObjectType 		string 		`json:"docType"`
+	Id				string		`json:"id"`
+	Balance			float32		`json:"balance"`
+	RideId			string		`json:"rideId"`			// Most receent ride ID
+	Status			string		`json:"status"`
+}
+
+type Repairer struct {
+	ObjectType 		string 		`json:"docType"`
+	Id				string		`json:"id"`
+}
+
 type Bike struct {
 	ObjectType 		string 		`json:"docType"`
 	Id				string		`json:"id"`
@@ -16,6 +29,7 @@ type Ride struct {
 	StartLocation	[]float32	`json:"startLocation"`
 	EndTime			string		`json:"endTime"`
 	EndLocation		[]float32	`json:"endLocation"`
+	Cost			float32		`json:"cost"`
 	Status			string		`json:"status"`
 }
 

@@ -490,8 +490,8 @@ func (t *BikeShareWorkflowChaincode) startRide(stub shim.ChaincodeStubInterface,
 		return shim.Error("Caller not a member of User Org. Access denied.")
 	}
 
-	if len(args) != 4 {
-		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4: {User ID, Bike ID, Longitude, Latitude}. Found %d.", len(args)))
+	if len(args) != 6 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 6: {User ID, Ride ID, Bike ID, Time, Longitude, Latitude}. Found %d.", len(args)))
 		return shim.Error(err.Error())
 	}
 
@@ -527,8 +527,23 @@ func (t *BikeShareWorkflowChaincode) startRide(stub shim.ChaincodeStubInterface,
 		return shim.Error(err.Error())
 	}
 
+	// Get ride state from the ledger
+	rideKey, err := getRideKey(stub, args[1])
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	rideBytes, err := stub.GetState(rideKey)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if len(rideBytes) != 0 {
+		err = errors.New(fmt.Sprintf("Ride %s already started.", args[1]))
+		return shim.Error(err.Error())
+	}
+
+
 	// Get bike state from the ledger
-	bikeKey, err := getBikeKey(stub, args[1])
+	bikeKey, err := getBikeKey(stub, args[2])
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -537,7 +552,7 @@ func (t *BikeShareWorkflowChaincode) startRide(stub shim.ChaincodeStubInterface,
 		return shim.Error(err.Error())
 	}
 	if len(bikeBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Bike %s not found.", args[1]))
+		err = errors.New(fmt.Sprintf("Bike %s not found.", args[2]))
 		return shim.Error(err.Error())
 	}
 
@@ -549,45 +564,28 @@ func (t *BikeShareWorkflowChaincode) startRide(stub shim.ChaincodeStubInterface,
 
 	// Verify if bike is available
 	if bike.Status != BIKE_AVAILABLE {
-		err = errors.New(fmt.Sprintf("Bike %s not available.", args[1]))
+		err = errors.New(fmt.Sprintf("Bike %s not available.", args[2]))
 		return shim.Error(err.Error())
 	}
 
 	// Parse longitude and latitude
-	longitude, err := strconv.ParseFloat(string(args[2]), 8)
+	longitude, err := strconv.ParseFloat(string(args[4]), 8)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	latitude, err := strconv.ParseFloat(string(args[3]), 8)
+	latitude, err := strconv.ParseFloat(string(args[5]), 8)
 	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	startTime := strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	rideId := fmt.Sprintf("%s-%s-%s", args[0], args[1], startTime)
-
-	// Get ride state from the ledger
-	rideKey, err := getRideKey(stub, rideId)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	rideBytes, err := stub.GetState(rideKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(rideBytes) != 0 {
-		err = errors.New(fmt.Sprintf("Ride %s already started.", rideId))
 		return shim.Error(err.Error())
 	}
 
 	// Create ride object
-	ride := &Ride{RIDE, rideId, args[0], args[1], startTime, []float32{float32(longitude), float32(latitude)}, "", []float32{}, 0, RIDE_ONGOING}
+	ride := &Ride{RIDE, args[1], args[0], args[2], args[3], []float32{float32(longitude), float32(latitude)}, "", []float32{}, 0, RIDE_ONGOING}
 	rideBytes, err = json.Marshal(ride)
 	if err != nil {
 		return shim.Error("Error marshaling ride structure.")
 	}
-
-	user.RideId = rideId
+	
+	user.RideId = args[1]
 	user.Status = USER_IN_RIDE
 	userBytes, err = json.Marshal(user)
 	if err != nil {
@@ -614,7 +612,7 @@ func (t *BikeShareWorkflowChaincode) startRide(stub shim.ChaincodeStubInterface,
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Printf("Ride %s started.\n", rideId)
+	fmt.Printf("Ride %s started.\n", args[1])
 
 	return shim.Success(nil)
 }
@@ -631,8 +629,8 @@ func (t *BikeShareWorkflowChaincode) endRide(stub shim.ChaincodeStubInterface, c
 		return shim.Error("Caller not a member of User Org. Access denied.")
 	}
 
-	if len(args) != 4 {
-		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 4: {User ID, Bike ID, Longitude, Latitude}. Found %d.", len(args)))
+	if len(args) != 5 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 5: {User ID, Ride ID, Time, Longitude, Latitude}. Found %d.", len(args)))
 		return shim.Error(err.Error())
 	}
 
@@ -662,8 +660,40 @@ func (t *BikeShareWorkflowChaincode) endRide(stub shim.ChaincodeStubInterface, c
 		return shim.Error(err.Error())
 	}
 
+	// Get ride state from the ledger
+	rideKey, err := getRideKey(stub, args[1])
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	rideBytes, err := stub.GetState(rideKey)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if len(rideBytes) == 0 {
+		err = errors.New(fmt.Sprintf("Ride %s not found.", args[1]))
+		return shim.Error(err.Error())
+	}
+
+	// Unmarshal the JSON
+	err = json.Unmarshal(rideBytes, &ride)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+	// Verify if ride ID matches
+	if user.RideId != args[1] {
+		err = errors.New(fmt.Sprintf("Actual ride %s and requested ride %s not match.", user.RideId, args[1]))
+		return shim.Error(err.Error())
+	}
+
+	// Verify if ride is ongoing
+	if ride.Status != RIDE_ONGOING {
+		err = errors.New(fmt.Sprintf("Ride %s not ongoing.", args[1]))
+		return shim.Error(err.Error())
+	}
+
 	// Get bike state from the ledger
-	bikeKey, err := getBikeKey(stub, args[1])
+	bikeKey, err := getBikeKey(stub, ride.BikeId)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -672,7 +702,7 @@ func (t *BikeShareWorkflowChaincode) endRide(stub shim.ChaincodeStubInterface, c
 		return shim.Error(err.Error())
 	}
 	if len(bikeBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Bike %s not found.", args[1]))
+		err = errors.New(fmt.Sprintf("Bike %s not found.", ride.BikeId))
 		return shim.Error(err.Error())
 	}
 
@@ -688,57 +718,31 @@ func (t *BikeShareWorkflowChaincode) endRide(stub shim.ChaincodeStubInterface, c
 		return shim.Error(err.Error())
 	}
 
-	// Get ride state from the ledger
-	rideKey, err := getRideKey(stub, user.RideId)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	rideBytes, err := stub.GetState(rideKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(rideBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Ride %s not found.", user.RideId))
-		return shim.Error(err.Error())
-	}
-
-	// Unmarshal the JSON
-	err = json.Unmarshal(rideBytes, &ride)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-
-	// Verify if bike ID matches
-	if ride.BikeId != args[1] {
-		err = errors.New(fmt.Sprintf("Actual bike %s and requested bike %s not match.", ride.BikeId, args[1]))
-		return shim.Error(err.Error())
-	}
-
-	// Verify if ride is ongoing
-	if ride.Status != RIDE_ONGOING {
-		err = errors.New(fmt.Sprintf("Ride %s not ongoing.", user.RideId))
-		return shim.Error(err.Error())
-	}
-
 	// Parse longitude and latitude
-	longitude, err := strconv.ParseFloat(string(args[2]), 8)
+	longitude, err := strconv.ParseFloat(string(args[3]), 8)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	latitude, err := strconv.ParseFloat(string(args[3]), 8)
+	latitude, err := strconv.ParseFloat(string(args[4]), 8)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
+	// Parse start and end time
 	startTimeInt, err := strconv.ParseInt(ride.StartTime, 10, 64)
     if err != nil {
         return shim.Error(err.Error())
     }
-    startTime := time.Unix(startTimeInt, 0)
-	endTime := time.Now()
+	startTime := time.Unix(startTimeInt, 0)
+	endTimeInt, err := strconv.ParseInt(args[2], 10, 64)
+    if err != nil {
+        return shim.Error(err.Error())
+    }
+	endTime := time.Unix(endTimeInt, 0)
 	duration := endTime.Sub(startTime).Minutes()
 	cost := float32(duration) * 0.1
-	ride.EndTime = strconv.FormatInt(endTime.UTC().Unix(), 10)
+
+	ride.EndTime = args[2]
 	ride.EndLocation = []float32{float32(longitude), float32(latitude)}
 	ride.Cost = cost
 	ride.Status = RIDE_COMPLETED
@@ -789,13 +793,27 @@ func (t *BikeShareWorkflowChaincode) reportIssue(stub shim.ChaincodeStubInterfac
 		return shim.Error("Caller not a member of User Org. Access denied.")
 	}
 
-	if len(args) != 2 {
-		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 2: {User ID, Ride ID}. Found %d.", len(args)))
+	if len(args) != 3 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 3: {User ID, Issue ID, Ride ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	// Get issue state from the ledger
+	issueKey, err := getIssueKey(stub, args[1])
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	issueBytes, err := stub.GetState(issueKey)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if len(issueBytes) != 0 {
+		err = errors.New(fmt.Sprintf("Issue %s already opened.", args[1]))
 		return shim.Error(err.Error())
 	}
 
 	// Get ride state from the ledger
-	rideKey, err := getRideKey(stub, args[1])
+	rideKey, err := getRideKey(stub, args[2])
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -804,7 +822,7 @@ func (t *BikeShareWorkflowChaincode) reportIssue(stub shim.ChaincodeStubInterfac
 		return shim.Error(err.Error())
 	}
 	if len(rideBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Ride %s not found.", args[1]))
+		err = errors.New(fmt.Sprintf("Ride %s not found.", args[2]))
 		return shim.Error(err.Error())
 	}
 
@@ -822,28 +840,12 @@ func (t *BikeShareWorkflowChaincode) reportIssue(stub shim.ChaincodeStubInterfac
 
 	// Verify if ride is completed
 	if ride.Status != RIDE_COMPLETED {
-		err = errors.New(fmt.Sprintf("Ride %s not completed.", args[1]))
-		return shim.Error(err.Error())
-	}
-
-	issueId := fmt.Sprintf("%s-%s", args[1], strconv.FormatInt(time.Now().UTC().Unix(), 10))
-
-	// Get issue state from the ledger
-	issueKey, err := getIssueKey(stub, issueId)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	issueBytes, err := stub.GetState(issueKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(issueBytes) != 0 {
-		err = errors.New(fmt.Sprintf("Issue %s already opened.", issueId))
+		err = errors.New(fmt.Sprintf("Ride %s not completed.", args[2]))
 		return shim.Error(err.Error())
 	}
 
 	// Create issue object
-	issue := &Issue{ISSUE, issueId, args[0], ride.BikeId, args[1], ISSUE_OPEN}
+	issue := &Issue{ISSUE, args[1], args[0], ride.BikeId, args[2], ISSUE_OPEN}
 	issueBytes, err = json.Marshal(issue)
 	if err != nil {
 		return shim.Error("Error marshaling issue structure.")
@@ -864,7 +866,7 @@ func (t *BikeShareWorkflowChaincode) reportIssue(stub shim.ChaincodeStubInterfac
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Printf("Issue %s opened.\n", issueId)
+	fmt.Printf("Issue %s opened.\n", args[1])
 
 	return shim.Success(nil)
 }
@@ -1100,13 +1102,27 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 		return shim.Error("Caller not a member of Provider Org. Access denied.")
 	}
 
-	if len(args) != 2 {
-		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 2: {Bike ID, Repairer ID}. Found %d.", len(args)))
+	if len(args) != 3 {
+		err = errors.New(fmt.Sprintf("Incorrect number of arguments. Expecting 3: {Repair ID, Bike ID, Repairer ID}. Found %d.", len(args)))
+		return shim.Error(err.Error())
+	}
+
+	// Get repair state from the ledger
+	repairKey, err := getRepairKey(stub, args[0])
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	repairBytes, err := stub.GetState(repairKey)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	if len(repairBytes) != 0 {
+		err = errors.New(fmt.Sprintf("Repair %s already requested.", args[0]))
 		return shim.Error(err.Error())
 	}
 
 	// Get bike state from the ledger
-	bikeKey, err := getBikeKey(stub, args[0])
+	bikeKey, err := getBikeKey(stub, args[1])
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -1115,7 +1131,7 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 		return shim.Error(err.Error())
 	}
 	if len(bikeBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Bike %s not found.", args[0]))
+		err = errors.New(fmt.Sprintf("Bike %s not found.", args[1]))
 		return shim.Error(err.Error())
 	}
 
@@ -1127,12 +1143,12 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 
 	// Verify if bike is available
 	if bike.Status != BIKE_AVAILABLE {
-		err = errors.New(fmt.Sprintf("Bike %s not available.", args[0]))
+		err = errors.New(fmt.Sprintf("Bike %s not available.", args[1]))
 		return shim.Error(err.Error())
 	}
 
 	// Get repairer state from the ledger
-	repairerKey, err := getRepairerKey(stub, args[1])
+	repairerKey, err := getRepairerKey(stub, args[2])
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -1141,7 +1157,7 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 		return shim.Error(err.Error())
 	}
 	if len(repairerBytes) == 0 {
-		err = errors.New(fmt.Sprintf("Repairer %s not found.", args[1]))
+		err = errors.New(fmt.Sprintf("Repairer %s not found.", args[2]))
 		return shim.Error(err.Error())
 	}
 
@@ -1151,24 +1167,8 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 		return shim.Error(err.Error())
 	}
 
-	repairId := fmt.Sprintf("%s-%s-%s", args[0], args[1], strconv.FormatInt(time.Now().UTC().Unix(), 10))
-
-	// Get repair state from the ledger
-	repairKey, err := getRepairKey(stub, repairId)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	repairBytes, err := stub.GetState(repairKey)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	if len(repairBytes) != 0 {
-		err = errors.New(fmt.Sprintf("Repair %s already requested.", repairId))
-		return shim.Error(err.Error())
-	}
-
 	// Create repair object
-	repair := &Repair{REPAIR, repairId, args[0], args[1], REPAIR_REQUESTED}
+	repair := &Repair{REPAIR, args[0], args[1], args[2], REPAIR_REQUESTED}
 	repairBytes, err = json.Marshal(repair)
 	if err != nil {
 		return shim.Error("Error marshaling repair structure.")
@@ -1189,7 +1189,7 @@ func (t *BikeShareWorkflowChaincode) requestRepair(stub shim.ChaincodeStubInterf
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	fmt.Printf("Repair %s requested.\n", repairId)
+	fmt.Printf("Repair %s requested.\n", args[0])
 
 	return shim.Success(nil)
 }

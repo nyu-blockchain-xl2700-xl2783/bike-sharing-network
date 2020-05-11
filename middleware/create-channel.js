@@ -65,7 +65,7 @@ function createChannel(channel_name, constants) {
 			PEER_ORGS.push(org);
 		}
 	})
-
+	
 	//
 	// Create and configure the channel
 	//
@@ -87,8 +87,8 @@ function createChannel(channel_name, constants) {
 	var config = null;		// Network channel configuration
 	var signatures = [];		// Collect signatures to submit to orderer for channel creation
 
-	// Attempt to create the channel as a client of Constants.IMPORTER_ORG
-	var org = ORGS[Constants.IMPORTER_ORG].name;
+	// Attempt to create the channel as a client of Constants.PROVIDER_ORG
+	var org = ORGS[Constants.PROVIDER_ORG].name;
 
 	// Use a file-based key-value store for this network instance
 	utils.setConfigSetting('key-value-store', 'fabric-client/lib/impl/FileKeyValueStore.js');
@@ -110,6 +110,7 @@ function createChannel(channel_name, constants) {
 		PEER_ORGS.forEach((org) => {
 			enrollmentAndSignPromises.push(enrollOrgAdminAndSignConfig);
 		})
+
 		// Enroll 'admin' user for each org and get their signatures on the channel config in sequence
 		return enrollmentAndSignPromises.reduce(
 			(promiseChain, currentFunction, currentIndex) =>
@@ -127,6 +128,7 @@ function createChannel(channel_name, constants) {
 
 		// Check if the channel already exists by querying for the genesis block
 		var channel = client.newChannel(channel_name);
+		
 		channel.addOrderer(
 			client.newOrderer(
 				ORGS.orderer.url,
@@ -136,6 +138,7 @@ function createChannel(channel_name, constants) {
 				}
 			)
 		);
+		
 		return channel.getGenesisBlock();
 	}).then((genesis_block) => {
 		console.log('Got genesis block. Channel', channel_name, 'already exists');

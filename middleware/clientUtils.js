@@ -269,9 +269,9 @@ function getUserMember(adminUser, adminPassword, client, userOrg, username) {
 }
 
 function getAdmin(client, userOrg) {
-	var keyPath = path.join(__dirname, util.format(Constants.networkLocation + '/crypto-config/peerOrganizations/%s.trade.com/users/Admin@%s.trade.com/msp/keystore', userOrg, userOrg));
+	var keyPath = path.join(__dirname, util.format(Constants.networkLocation + '/crypto-config/peerOrganizations/%s.bikeshare.com/users/Admin@%s.bikeshare.com/msp/keystore', userOrg, userOrg));
 	var keyPEM = Buffer.from(readAllFiles(keyPath)[0]).toString();
-	var certPath = path.join(__dirname, util.format(Constants.networkLocation + '/crypto-config/peerOrganizations/%s.trade.com/users/Admin@%s.trade.com/msp/signcerts', userOrg, userOrg));
+	var certPath = path.join(__dirname, util.format(Constants.networkLocation + '/crypto-config/peerOrganizations/%s.bikeshare.com/users/Admin@%s.bikeshare.com/msp/signcerts', userOrg, userOrg));
 	var certPEM = readAllFiles(certPath)[0];
 
 	var cryptoSuite = Client.newCryptoSuite();
@@ -296,9 +296,9 @@ function getOrdererMSPId() {
 }
 
 function getOrdererAdmin(client) {
-	var keyPath = path.join(__dirname, Constants.networkLocation + '/crypto-config/ordererOrganizations/trade.com/users/Admin@trade.com/msp/keystore');
+	var keyPath = path.join(__dirname, Constants.networkLocation + '/crypto-config/ordererOrganizations/bikeshare.com/users/Admin@bikeshare.com/msp/keystore');
 	var keyPEM = Buffer.from(readAllFiles(keyPath)[0]).toString();
-	var certPath = path.join(__dirname, Constants.networkLocation + '/crypto-config/ordererOrganizations/trade.com/users/Admin@trade.com/msp/signcerts');
+	var certPath = path.join(__dirname, Constants.networkLocation + '/crypto-config/ordererOrganizations/bikeshare.com/users/Admin@bikeshare.com/msp/signcerts');
 	var certPEM = readAllFiles(certPath)[0];
 
 	return Promise.resolve(client.createUser({
@@ -355,7 +355,7 @@ module.exports.getSubmitter = function(client, peerOrgAdmin, org, username) {
 		if (typeof org === 'string') {
 			userOrg = org;
 		} else {
-			userOrg = Constants.IMPORTER_ORG;
+			userOrg = Constants.PROVIDER_ORG;
 		}
 	}
 

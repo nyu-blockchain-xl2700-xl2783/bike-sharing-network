@@ -69,11 +69,11 @@ createChannel.createChannel(Constants.CHANNEL_NAME).then(() => {
 	console.log('\n');
 
 	return instantiateCC.instantiateOrUpgradeChaincode(
-		Constants.IMPORTER_ORG,
+		Constants.PROVIDER_ORG,
 		Constants.CHAINCODE_PATH,
 		Constants.CHAINCODE_VERSION,
-		'init',
-		['LumberInc', 'LumberBank', '100000', 'WoodenToys', 'ToyBank', '200000', 'UniversalFrieght', 'ForestryDepartment'],
+		null,
+		null,
 		false
 	);
 }, (err) => {
@@ -93,7 +93,6 @@ createChannel.createChannel(Constants.CHANNEL_NAME).then(() => {
 	console.log('\n');
 	ClientUtils.txEventsCleanup();
 
-	return invokeCC.invokeChaincode(Constants.IMPORTER_ORG, Constants.CHAINCODE_VERSION, 'requestTrade', ['2ks89j9', '50000','Wood for Toys'], 'Importer');
 }, (err) => {
 	console.log('\n');
 	console.log('------------------------------');
@@ -101,41 +100,8 @@ createChannel.createChannel(Constants.CHANNEL_NAME).then(() => {
 	console.log('------------------------------');
 	console.log('\n');
 	process.exit(1);
-})
-// Invoke a trade request operation on the chaincode
-.then(() => {
-	console.log('\n');
-	console.log('------------------------------');
-	console.log('CHAINCODE INVOCATION COMPLETE');
-	console.log('------------------------------');
-	console.log('\n');
-
-	return queryCC.queryChaincode(Constants.EXPORTER_ORG, Constants.CHAINCODE_VERSION, 'getTradeStatus', ['2ks89j9'], 'Exporter');
-}, (err) => {
-	console.log('\n');
-	console.log('-----------------------------');
-	console.log('CHAINCODE INVOCATION FAILED:', err);
-	console.log('-----------------------------');
-	console.log('\n');
-	process.exit(1);
-})
-// Query the chaincode for the trade request status
-.then((result) => {
-	console.log('\n');
-	console.log('-------------------------');
-	console.log('CHAINCODE QUERY COMPLETE');
-	console.log('VALUE:', result);
-	console.log('-------------------------');
-	console.log('\n');
-	ClientUtils.txEventsCleanup();
-}, (err) => {
-	console.log('\n');
-	console.log('------------------------');
-	console.log('CHAINCODE QUERY FAILED:', err);
-	console.log('------------------------');
-	console.log('\n');
-	process.exit(1);
 });
+
 
 process.on('uncaughtException', err => {
 	console.error(err);

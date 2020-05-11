@@ -68,7 +68,7 @@ var ACCEPT_ALL = {
 
 var chaincodeLocation = '../chaincode';
 
-var networkId = 'trade-network';
+var networkId = 'bike-sharing-network';
 
 var networkConfig = './config.json';
 
@@ -81,9 +81,9 @@ var USER_ORG = 'userorg';
 var REPAIRER_ORG = 'repairerorg';
 
 
-var CHANNEL_NAME = 'tradechannel';
+var CHANNEL_NAME = 'bsnchannel';
 var CHAINCODE_PATH = 'github.com/bike_share_workflow';
-var CHAINCODE_ID = 'tradecc';
+var CHAINCODE_ID = 'bsncc';
 var CHAINCODE_VERSION = 'v0';
 
 var TRANSACTION_ENDORSEMENT_POLICY = ALL_THREE_ORG_MEMBERS;

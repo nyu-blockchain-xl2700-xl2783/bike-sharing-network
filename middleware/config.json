@@ -1,5 +1,5 @@
 {
-	"trade-network": {
+	"bike-sharing-network": {
 		"orderer": {
 			"mspid": "OrdererMSP",
 			"url": "grpcs://localhost:7050",

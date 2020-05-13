@@ -4,7 +4,7 @@
 
 ### Registration
 
-* `registerUser USER_ID`
+* `registerUser USER_ID BALANCE`
 * `registerRepairer REPAIRER_ID`
 
 ### Transaction

@@ -1,0 +1,40 @@
+extends layout
+block content
+    script
+        include ../controller/home.js
+    div.text-center
+        div(class="form-signin")
+            div.text-center
+                p Users Panel
+
+        - var divClasses=['checkbox', 'mb-3'];
+        - var fcn = ['getUsers', 'getBikes','updateBikeLocation', 'startRide', 'endRide', 'reportIssue'];
+    .row
+        .col-md-3
+        .col-md-3
+            div.center
+                div(class=divClasses)
+                    select(type="text" name="function" id="fcn" placeholder="Your Function" onchange="fcn('userorg')" required)
+                       - for (var x = 0; x < fcn.length; x++)
+                            option(id=x value=x) #{fcn[x]}
+        .col-md-3
+            div.center
+                - var buttonClass=['btn', 'btn-sm', 'btn-primary'];
+                button(class=buttonClass type="button", onclick="execute('userorg')") Execute
+        .col-md-3
+    .row
+        .col-md-4
+            input(type="text" id="arg1" class="form-control" placeholder="Arg1" required autofocus)
+        .col-md-4
+            input(type="text" id="arg2" class="form-control" placeholder="Arg2" required autofocus)
+        .col-md-4
+            input(type="text" id="arg3" class="form-control" placeholder="Arg3" required autofocus)
+    .row
+        .col-md-4
+            input(type="text" id="arg4" class="form-control" placeholder="Arg4" required autofocus)
+        .col-md-4
+            input(type="text" id="arg5" class="form-control" placeholder="Arg5" required autofocus)
+        .col-md-4
+            input(type="text" id="arg6" class="form-control" placeholder="Arg6" required autofocus)
+    div.center
+        textarea(class="output", id='text1')

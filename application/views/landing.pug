@@ -1,0 +1,47 @@
+
+extends layout
+
+
+block content
+
+    script
+        include ../controller/login.js
+
+
+    div.text-center
+        - var h1Classes = ['h3', 'mb-3', 'font-weight-normal']
+            h1(class=h1Classes) Bike-sharing-networks
+
+
+
+    div.text-center
+        form(class="form-signin" method="POST" action="##", id="form1")
+            #error
+                if error
+                    p.text-danger Error!!!
+
+            - var h1Classes = ['h3', 'mb-3', 'font-weight-normal']
+            h1(class=h1Classes) Please sign in
+
+            //-input username
+            label( for="inputEmail" class="sr-only") Username
+            input(type="text" name="username" id="inputEmail" class="form-control" placeholder="Username" required autofocus)
+
+
+            //-input password
+            label(for="inputPassword" class="sr-only") Password
+            input(type="password" name="password" id="inputPassword" class="form-control" placeholder="Password")
+
+
+
+            //-remember Checkbox
+            - var divClasses=['checkbox', 'mb-3'];
+            - var variables = ['providerorg', 'userorg','repairerorg']
+            div(class=divClasses)
+                select(type="text" name="orgName" id="org" placeholder="Your Org" required)
+                    each variable in variables
+                        option(value=variable) #{variable}
+
+            //-signIn button
+            - var buttonClass=['btn', 'btn-lg', 'btn-primary', 'btn-block'];
+            button(class=buttonClass type="button", onclick='login()') Sign in

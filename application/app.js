@@ -29,6 +29,7 @@ var bearerToken = require('express-bearer-token');
 var cors = require('cors');
 var path = require('path');
 
+
 var Constants = require('../middleware/constants.js');
 var ClientUtils = require('../middleware/clientUtils.js');
 var createChannel = require('../middleware/create-channel.js');
@@ -38,11 +39,12 @@ var instantiateCC = require('../middleware/instantiate-chaincode.js');
 var invokeCC = require('../middleware/invoke-chaincode.js');
 var queryCC = require('../middleware/query-chaincode.js');
 var upgradeChannel = require('../middleware/upgrade-channel.js');
-var adduser = require('../middleware/addUser.js');
+
+
+
 
 var host = process.env.HOST || 'localhost';
 var port = process.env.PORT || 4000;
-
 
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// SET CONFIGURATONS ////////////////////////////
@@ -61,19 +63,21 @@ app.use(bodyParser.urlencoded({
 
 // set secret variable
 app.set('secret', 'thisismysecret');
-app.use(expressJWT({
+const  jwtMW = expressJWT({
 	secret: 'thisismysecret'
-}).unless({
-	path: ['/login']
-}));
+});
 app.use(bearerToken());
-app.use(function(req, res, next) {
-	logger.debug(' ------>>>>>> new request for %s',req.originalUrl);
-	if (req.originalUrl.indexOf('/login') >= 0) {
-		return next();
-	}
 
+
+
+function authenticateRoute(req, res, next) {
+	logger.debug(' ------>>>>>> new request for %s',req.originalUrl);
 	var token = req.token;
+	if (req.cookie){
+		if ("my_token" in req.cookie){
+			token = req.cookie["my_token"];
+		}
+	}
 	jwt.verify(token, app.get('secret'), function(err, decoded) {
 		if (err) {
 			res.send({
@@ -92,9 +96,12 @@ app.use(function(req, res, next) {
 			return next();
 		}
 	});
-});
+}
 
+app.use(express.static(__dirname + '/public'));
 
+app.set('view engine', 'pug')
+app.set('views', './views')
 ///////////////////////////////////////////////////////////////////////////////
 //////////////////////////////// START SERVER /////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,17 +118,57 @@ function getErrorMessage(field) {
 	};
 	return response;
 }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////// Routes START HERE ///////////////////////////
+//////////////////////////////////////////////////////////////////////////////
 
+app.get('/', async function(req,res){
+	res.render('landing.pug', {
+	  locals : { 
+				title : 'Bike Sharing'
+			   ,description: 'Landing Page'
+			  }
+	});
+  });
 
+app.get('/users', async function(req,res){
+	res.render('users.pug', {
+		locals : { 
+				title : 'Bike Sharing for Users'
+				,description: 'Users Page'
+				}
+	});
+});
+
+app.get('/repairers', async function(req,res){
+	res.render('repairers.pug', {
+		locals : { 
+				title : 'Bike Sharing for Repairers'
+				,description: 'Repairers Page'
+				}
+	});
+});
+
+app.get('/providers', async function(req,res){
+	res.render('providers.pug', {
+		locals : { 
+				title : 'Bike Sharing for providers'
+				,description: 'Providers Page'
+				}
+	});
+});
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////// REST ENDPOINTS START HERE ///////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+
 // Register and enroll user
 app.post('/login', async function(req, res) {
+	
 	var username = req.body.username;
 	var orgName = req.body.orgName;
 	var password = req.body.password;
+	
 	logger.debug('User name for login/registration : ' + username);
 	logger.debug('Org name  : ' + orgName);
 	if (!username) {
@@ -179,7 +226,7 @@ app.post('/login', async function(req, res) {
 });
 
 // Create Channel
-app.post('/channel/create', async function(req, res) {
+app.post('/channel/create', jwtMW, authenticateRoute,async function(req, res) {
 	logger.info('<<<<<<<<<<<<<<<<< C R E A T E  C H A N N E L >>>>>>>>>>>>>>>>>');
 	if (req.username !== 'admin') {
 		res.statusCode = 403;
@@ -195,7 +242,7 @@ app.post('/channel/create', async function(req, res) {
 });
 
 // Join Channel
-app.post('/channel/join', async function(req, res) {
+app.post('/channel/join', jwtMW, authenticateRoute, async function(req, res) {
 	logger.info('<<<<<<<<<<<<<<<<< J O I N  C H A N N E L >>>>>>>>>>>>>>>>>');
 	logger.debug('username :' + req.username);
 	logger.debug('orgname:' + req.orgname);
@@ -213,7 +260,7 @@ app.post('/channel/join', async function(req, res) {
 });
 
 // Add an Organization and Peer to the Channel
-app.post('/channel/addorg', async function(req, res) {
+app.post('/channel/addorg', jwtMW, authenticateRoute, async function(req, res) {
 	logger.info('<<<<<<<<<<<<<<<<< A D D  O R G  A N D  P E E R  T O  C H A N N E L >>>>>>>>>>>>>>>>>');
 	if (req.username !== 'admin') {
 		res.statusCode = 403;
@@ -239,7 +286,7 @@ app.post('/channel/addorg', async function(req, res) {
 });
 
 // Install chaincode on target peers
-app.post('/chaincode/install', async function(req, res) {
+app.post('/chaincode/install', jwtMW, authenticateRoute, async function(req, res) {
 	logger.debug('==================== INSTALL CHAINCODE ==================');
 	logger.debug('username :' + req.username);
 	logger.debug('orgname:' + req.orgname);
@@ -267,7 +314,7 @@ app.post('/chaincode/install', async function(req, res) {
 });
 
 // Instantiate chaincode on channel
-app.post('/chaincode/instantiate', async function(req, res) {
+app.post('/chaincode/instantiate', jwtMW, authenticateRoute, async function(req, res) {
 	logger.debug('==================== INSTANTIATE CHAINCODE ==================');
 	logger.debug('username :' + req.username);
 	logger.debug('orgname:' + req.orgname);
@@ -304,7 +351,7 @@ app.post('/chaincode/instantiate', async function(req, res) {
 });
 
 // Install new chaincode version on network peers and upgrade it on the channel
-app.post('/chaincode/upgrade', async function(req, res) {
+app.post('/chaincode/upgrade', jwtMW, authenticateRoute, async function(req, res) {
 	logger.debug('==================== UPGRADE CHAINCODE ==================');
 	logger.debug('username :' + req.username);
 	logger.debug('orgname:' + req.orgname);
@@ -349,10 +396,10 @@ app.post('/chaincode/upgrade', async function(req, res) {
 });
 
 // Invoke transaction on chaincode on network peers
-app.post('/chaincode/:fcn', async function(req, res) {
+app.post('/chaincode/:fcn', jwtMW, authenticateRoute, async function(req, res) {
 	logger.debug('==================== INVOKE ON CHAINCODE ==================');
 	logger.debug('username :' + req.username);
-	logger.debug('orgname:' + req.orgname);
+	logger.debug('orgname :' + req.orgname);
 
 	var ccversion = req.body.ccversion;
 	if (!ccversion) {
@@ -381,30 +428,34 @@ app.post('/chaincode/:fcn', async function(req, res) {
 });
 
 // Query on chaincode on network peers
-app.get('/chaincode/:fcn', async function(req, res) {
+app.get('/chaincode/:fcn',jwtMW, authenticateRoute, async function(req, res) {
 	logger.debug('==================== QUERY BY CHAINCODE ==================');
 	logger.debug('username :' + req.username);
-	logger.debug('orgname:' + req.orgname);
+	logger.debug('orgname  :' + req.orgname);
 
-	var ccversion = req.body.ccversion;
+	var ccversion = req.query.ccversion;
 	if (!ccversion) {
 		res.json(getErrorMessage('\'ccversion\''));
 		return;
 	}
 
 	var fcn = req.params.fcn;
-	var args = req.body.args;
+	var args = req.query.args;
 	if (!fcn) {
 		res.json(getErrorMessage('\'fcn\''));
 		return;
 	}
-	if (!args) {
-		res.json(getErrorMessage('\'args\''));
-		return;
-	}
+	// if (!args) {
+	// 	res.json(getErrorMessage('\'args\''));
+	// 	return;
+	// }
 	logger.debug('args  : ' + args);
-
-	queryCC.queryChaincode(req.orgname, ccversion, fcn, args).then((result) => {
+	logger.debug('fcn   :' + fcn);
+	var arglist = []
+	if (args){
+		arglist.push(args);
+	}
+	queryCC.queryChaincode(req.orgname, ccversion, fcn, arglist).then((result) => {
 		res.json({success: true, message: result});
 	}, (err) => {
 		res.json({success: false, message: err.message});

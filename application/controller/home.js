@@ -8,8 +8,6 @@ var repairer_args = ['','','ISSUE_ID','USER_ID','BIKE_ID','RIDE_ID','ISSUE_STATU
 var ccversion = "v0";
 
 function execute(org){
-    console.log(repairer_args.length);
-    console.log(repairer_fcn.length);
     var args = [];
     var fcn = [];
     switch(org){
@@ -38,14 +36,14 @@ function execute(org){
     var arg4 = document.getElementById('arg4');
     var arg5 = document.getElementById('arg5');
     var arg6 = document.getElementById('arg6');
-    if (arg1.value.length>0) args.push(arg1);
-    if (arg2.value.length>0) args.push(arg2);
-    if (arg3.value.length>0) args.push(arg3);
-    if (arg4.value.length>0) args.push(arg4);
-    if (arg5.value.length>0) args.push(arg5);
-    if (arg6.value.length>0) args.push(arg6);
+    if (arg1.value.length>0) args.push(arg1.value);
+    if (arg2.value.length>0) args.push(arg2.value);
+    if (arg3.value.length>0) args.push(arg3.value);
+    if (arg4.value.length>0) args.push(arg4.value);
+    if (arg5.value.length>0) args.push(arg5.value);
+    if (arg6.value.length>0) args.push(arg6.value);
     var token = getCookie("my_token");
-
+    
     if (httptype == "POST"){
         $.ajax({
             type: "POST",
@@ -56,7 +54,7 @@ function execute(org){
             },
             data: JSON.stringify({
                 "ccversion": ccversion,
-                "args": args
+                "args": args,
             }),
             success: function (result) {
                 textbox.value = result.message;

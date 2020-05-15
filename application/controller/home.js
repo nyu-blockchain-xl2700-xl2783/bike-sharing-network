@@ -57,7 +57,11 @@ function execute(org){
                 "args": args,
             }),
             success: function (result) {
-                textbox.value = result.message;
+                if (result.success == true){
+                    textbox.value = result.message;
+                } else {
+                    textbox.value = "Function Error";
+                }
             },
             error : function() {
                 textbox.value = "Error";
@@ -78,7 +82,11 @@ function execute(org){
             processData: false,
             data: $.param({'ccversion' : ccversion, 'args':arg}),
             success: function (result) {
-                textbox.value = result.message;
+                if (result.success == true){
+                    textbox.value = result.message;
+                } else {
+                    textbox.value = "Function Error";
+                }
             },
             error : function() {
                 textbox.value = "Error";
